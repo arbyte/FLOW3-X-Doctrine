@@ -21,7 +21,7 @@ class Package extends BasePackage {
 	 * @return void
 	 */
 	public function boot(\TYPO3\FLOW3\Core\Bootstrap $bootstrap) {
-		require(__DIR__ . '/ORM/Mapping/Driver/DoctrineAnnotations.php');
+		\Doctrine\Common\Annotations\AnnotationRegistry::registerFile(__DIR__ . '/ORM/Mapping/Driver/DoctrineAnnotations.php');
 	}
 }
 
