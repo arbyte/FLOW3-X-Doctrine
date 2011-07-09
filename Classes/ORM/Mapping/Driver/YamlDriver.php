@@ -435,7 +435,7 @@ class YamlDriver extends AbstractFileDriver
                 }
 
                 if (isset($manyToManyElement['orphanRemoval'])) {
-                    $mapping['orphanRemoval'] = (bool)$manyToManyElement['orphan-removal'];
+                    $mapping['orphanRemoval'] = (bool)$manyToManyElement['orphanRemoval'];
                 }
 
                 if (isset($manyToManyElement['orderBy'])) {
@@ -506,6 +506,6 @@ class YamlDriver extends AbstractFileDriver
      */
     protected function _loadMappingFile($file)
     {
-        return \Symfony\Component\Yaml\Yaml::load($file);
+        return \Symfony\Component\Yaml\Yaml::parse($file);
     }
 }

@@ -1,7 +1,5 @@
 <?php
 /*
- *  $Id$
- *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -19,50 +17,33 @@
  * <http://www.doctrine-project.org>.
  */
 
-namespace Doctrine\ORM\Query\Expr;
+namespace Doctrine\ORM\Query\AST;
 
 /**
- * Expression class for building DQL and parts
+ * NullIfExpression ::= "NULLIF" "(" ScalarExpression "," ScalarExpression ")"
  *
+ * @since   2.1
  * @license http://www.opensource.org/licenses/lgpl-license.php LGPL
  * @link    www.doctrine-project.org
- * @since   2.0
- * @version $Revision$
+ * @author  Benjamin Eberlei <kontakt@beberlei.de>
  * @author  Guilherme Blanco <guilhermeblanco@hotmail.com>
  * @author  Jonathan Wage <jonwage@gmail.com>
  * @author  Roman Borschel <roman@code-factory.org>
  */
-class Composite extends Base
+class NullIfExpression extends Node
 {
-    public function __toString()
-    {
-        if ($this->count() === 1) {
-            return (string) $this->_parts[0];
-        }
-        
-        $components = array();
-        
-        foreach ($this->_parts as $part) {
-            $components[] = $this->processQueryPart($part);
-        }
-        
-        return implode($this->_separator, $components);
-    }
+    public $firstExpression;
     
-    
-    private function processQueryPart($part)
+    public $secondExpression;
+
+    public function __construct($firstExpression, $secondExpression)
     {
-        $queryPart = (string) $part;
-        
-        if (is_object($part) && $part instanceof self && $part->count() > 1) {
-            return $this->_preSeparator . $queryPart . $this->_postSeparator;
-        }
-        
-        // Fixes DDC-1237: User may have added a where item containing nested expression (with "OR" or "AND")
-        if (mb_stripos($queryPart, ' OR ') !== false || mb_stripos($queryPart, ' AND ') !== false) {
-            return $this->_preSeparator . $queryPart . $this->_postSeparator;
-        }
-        
-        return $queryPart;
+        $this->firstExpression  = $firstExpression;
+        $this->secondExpression = $secondExpression;
+    }    
+    
+    public function dispatch($sqlWalker)
+    {
+        return $sqlWalker->walkNullIfExpression($this);
     }
 }
