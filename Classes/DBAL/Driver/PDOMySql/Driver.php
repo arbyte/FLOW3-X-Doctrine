@@ -39,6 +39,11 @@ class Driver implements \Doctrine\DBAL\Driver
      */
     public function connect(array $params, $username = null, $password = null, array $driverOptions = array())
     {
+        if (version_compare(PHP_VERSION, '5.3.6', '<') && isset($params['charset']) && !isset($driverOptions[\PDO::MYSQL_ATTR_INIT_COMMAND])) {
+            $driverOptions[\PDO::MYSQL_ATTR_INIT_COMMAND] = 'SET NAMES ' . $params['charset'];
+            unset($params['charset']);
+        }
+
         $conn = new \Doctrine\DBAL\Driver\PDOConnection(
             $this->_constructPdoDsn($params),
             $username,
@@ -71,7 +76,7 @@ class Driver implements \Doctrine\DBAL\Driver
         if (isset($params['charset'])) {
             $dsn .= 'charset=' . $params['charset'] . ';';
         }
-        
+
         return $dsn;
     }
 
