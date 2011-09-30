@@ -833,6 +833,8 @@ class UnitOfWork implements PropertyChangedListener
         
         // See if there are any new classes in the changeset, that are not in the
         // commit order graph yet (dont have a node).
+
+        // TODO: Can we know the know the possible $newNodes based on something more efficient? IdentityMap?
         $newNodes = array();
         foreach ($entityChangeSet as $oid => $entity) {
             $className = get_class($entity);         
@@ -844,7 +846,7 @@ class UnitOfWork implements PropertyChangedListener
         }
 
         // Calculate dependencies for new nodes
-        foreach ($newNodes as $class) {
+        while ($class = array_pop($newNodes)) {
             foreach ($class->associationMappings as $assoc) {
                 if ($assoc['isOwningSide'] && $assoc['type'] & ClassMetadata::TO_ONE) {
                     $targetClass = $this->em->getClassMetadata($assoc['targetEntity']);
@@ -859,6 +861,7 @@ class UnitOfWork implements PropertyChangedListener
                             $targetSubClass = $this->em->getClassMetadata($subClassName);
                             if ( ! $calc->hasClass($subClassName)) {
                                 $calc->addClass($targetSubClass);
+                                $newNodes[] = $targetSubClass;
                             }
                             $calc->addDependency($targetSubClass, $class);
                         }
@@ -1099,6 +1102,22 @@ class UnitOfWork implements PropertyChangedListener
                             } else {
                                 return self::STATE_NEW;
                             }
+                        }
+                    }
+                } else if (!$class->idGenerator->isPostInsertGenerator()) {
+                    // if we have a pre insert generator we can't be sure that having an id
+                    // really means that the entity exists. We have to verify this through
+                    // the last resort: a db lookup
+
+                    // Last try before db lookup: check the identity map.
+                    if ($this->tryGetById($id, $class->rootEntityName)) {
+                        return self::STATE_DETACHED;
+                    } else {
+                        // db lookup
+                        if ($this->getEntityPersister(get_class($entity))->exists($entity)) {
+                            return self::STATE_DETACHED;
+                        } else {
+                            return self::STATE_NEW;
                         }
                     }
                 } else {
@@ -1367,6 +1386,10 @@ class UnitOfWork implements PropertyChangedListener
         if ($this->getEntityState($entity, self::STATE_DETACHED) == self::STATE_MANAGED) {
             $managedCopy = $entity;
         } else {
+            if ($entity instanceof Proxy && ! $entity->__isInitialized__) {
+                $entity->__load();
+            }
+
             // Try to look the entity up in the identity map.
             $id = $class->getIdentifierValues($entity);
 
@@ -1405,7 +1428,7 @@ class UnitOfWork implements PropertyChangedListener
                 $entityVersion = $class->reflFields[$class->versionField]->getValue($entity);
                 // Throw exception if versions dont match.
                 if ($managedCopyVersion != $entityVersion) {
-                    throw OptimisticLockException::lockFailedVersionMissmatch($entity, $managedCopyVersion, $entityVersion);
+                    throw OptimisticLockException::lockFailedVersionMissmatch($entity, $entityVersion, $managedCopyVersion);
                 }
             }
 
@@ -1455,7 +1478,8 @@ class UnitOfWork implements PropertyChangedListener
                         }
                         if ($assoc2['isCascadeMerge']) {
                             $managedCol->initialize();
-                            if (!$managedCol->isEmpty()) {
+                            // clear and set dirty a managed collection if its not also the same collection to merge from.
+                            if (!$managedCol->isEmpty() && $managedCol != $mergeCol) {
                                 $managedCol->unwrap()->clear();
                                 $managedCol->setDirty(true);
                                 if ($assoc2['isOwningSide'] && $assoc2['type'] == ClassMetadata::MANY_TO_MANY && $class->isChangeTrackingNotify()) {
@@ -1654,6 +1678,10 @@ class UnitOfWork implements PropertyChangedListener
             }
             $relatedEntities = $class->reflFields[$assoc['fieldName']]->getValue($entity);
             if ($relatedEntities instanceof Collection) {
+                if ($relatedEntities === $class->reflFields[$assoc['fieldName']]->getValue($managedCopy)) {
+                    continue;
+                }
+
                 if ($relatedEntities instanceof PersistentCollection) {
                     // Unwrap so that foreach() does not initialize
                     $relatedEntities = $relatedEntities->unwrap();
@@ -1736,7 +1764,7 @@ class UnitOfWork implements PropertyChangedListener
      */
     public function lock($entity, $lockMode, $lockVersion = null)
     {
-        if ($this->getEntityState($entity) != self::STATE_MANAGED) {
+        if ($this->getEntityState($entity, self::STATE_DETACHED) != self::STATE_MANAGED) {
             throw new InvalidArgumentException("Entity is not MANAGED.");
         }
         
@@ -1975,7 +2003,7 @@ class UnitOfWork implements PropertyChangedListener
                                         // a way to solve this with deferred eager loading, which means putting
                                         // an entity with subclasses at a *-to-one location is really bad! (performance-wise)
                                         $newValue = $this->getEntityPersister($assoc['targetEntity'])
-                                                ->loadOneToOneEntity($assoc, $entity, null, $associatedId);
+                                                ->loadOneToOneEntity($assoc, $entity, $associatedId);
                                     } else {
                                         // Deferred eager load only works for single identifier classes
 
@@ -2011,7 +2039,7 @@ class UnitOfWork implements PropertyChangedListener
                         } else {
                             // Inverse side of x-to-one can never be lazy
                             $class->reflFields[$field]->setValue($entity, $this->getEntityPersister($assoc['targetEntity'])
-                                    ->loadOneToOneEntity($assoc, $entity, null));
+                                    ->loadOneToOneEntity($assoc, $entity));
                         }
                     } else {
                         // Inject collection
