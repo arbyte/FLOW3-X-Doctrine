@@ -316,7 +316,7 @@ class Connection implements DriverConnection
     /**
      * Gets the ExpressionBuilder for the connection.
      *
-     * @return Doctrine\DBAL\Query\ExpressionBuilder
+     * @return \Doctrine\DBAL\Query\ExpressionBuilder
      */
     public function getExpressionBuilder()
     {
