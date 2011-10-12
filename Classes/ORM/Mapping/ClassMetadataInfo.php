@@ -839,15 +839,11 @@ class ClassMetadataInfo implements ClassMetadata
 
         // Cascades
         $cascades = isset($mapping['cascade']) ? array_map('strtolower', $mapping['cascade']) : array();
+        
         if (in_array('all', $cascades)) {
-            $cascades = array(
-               'remove',
-               'persist',
-               'refresh',
-               'merge',
-               'detach'
-            );
+            $cascades = array('remove', 'persist', 'refresh', 'merge', 'detach');
         }
+        
         $mapping['cascade'] = $cascades;
         $mapping['isCascadeRemove'] = in_array('remove',  $cascades);
         $mapping['isCascadePersist'] = in_array('persist',  $cascades);
@@ -1276,7 +1272,7 @@ class ClassMetadataInfo implements ClassMetadata
     public function getTemporaryIdTableName()
     {
         // replace dots with underscores because PostgreSQL creates temporary tables in a special schema
-        return str_replace('.', '_', $this->table['name'] . '_id_tmp');
+        return str_replace('.', '_', $this->getTableName() . '_id_tmp');
     }
 
     /**
@@ -1375,9 +1371,11 @@ class ClassMetadataInfo implements ClassMetadata
                 $this->table['name'] = $table['name'];
             }
         }
+        
         if (isset($table['indexes'])) {
             $this->table['indexes'] = $table['indexes'];
         }
+        
         if (isset($table['uniqueConstraints'])) {
             $this->table['uniqueConstraints'] = $table['uniqueConstraints'];
         }
@@ -1526,6 +1524,10 @@ class ClassMetadataInfo implements ClassMetadata
      */
     public function setCustomRepositoryClass($repositoryClassName)
     {
+        if ($repositoryClassName !== null && strpos($repositoryClassName, '\\') === false 
+                && strlen($this->namespace) > 0) {
+            $repositoryClassName = $this->namespace . '\\' . $repositoryClassName;
+        }
         $this->customRepositoryClassName = $repositoryClassName;
     }
 
@@ -1567,9 +1569,6 @@ class ClassMetadataInfo implements ClassMetadata
 
     /**
      * Adds a lifecycle callback for entities of this class.
-     *
-     * Note: If the same callback is registered more than once, the old one
-     * will be overridden.
      *
      * @param string $callback
      * @param string $event
@@ -1629,22 +1628,33 @@ class ClassMetadataInfo implements ClassMetadata
     public function setDiscriminatorMap(array $map)
     {
         foreach ($map as $value => $className) {
-            if (strlen($this->namespace) > 0 && strpos($className, '\\') === false) {
-                $className = $this->namespace . '\\' . $className;
+            $this->addDiscriminatorMapClass($value, $className);
+        }
+    }
+
+    /**
+     * Add one entry of the discriminator map with a new class and corresponding name.
+     *
+     * @param string $name
+     * @param string $className
+     */
+    public function addDiscriminatorMapClass($name, $className)
+    {
+        if (strlen($this->namespace) > 0 && strpos($className, '\\') === false) {
+            $className = $this->namespace . '\\' . $className;
+        }
+
+        $className = ltrim($className, '\\');
+        $this->discriminatorMap[$name] = $className;
+
+        if ($this->name == $className) {
+            $this->discriminatorValue = $name;
+        } else {
+            if ( ! class_exists($className)) {
+                throw MappingException::invalidClassInDiscriminatorMap($className, $this->name);
             }
-            
-            $className = ltrim($className, '\\');
-            $this->discriminatorMap[$value] = $className;
-            
-            if ($this->name == $className) {
-                $this->discriminatorValue = $value;
-            } else {
-                if ( ! class_exists($className)) {
-                    throw MappingException::invalidClassInDiscriminatorMap($className, $this->name);
-                }
-                if (is_subclass_of($className, $this->name)) {
-                    $this->subClasses[] = $className;
-                }
+            if (is_subclass_of($className, $this->name)) {
+                $this->subClasses[] = $className;
             }
         }
     }
@@ -1806,7 +1816,7 @@ class ClassMetadataInfo implements ClassMetadata
         $this->versionField = $mapping['fieldName'];
 
         if ( ! isset($mapping['default'])) {
-            if ($mapping['type'] == 'integer') {
+            if (in_array($mapping['type'], array('integer', 'bigint', 'smallint'))) {
                 $mapping['default'] = 1;
             } else if ($mapping['type'] == 'datetime') {
                 $mapping['default'] = 'CURRENT_TIMESTAMP';
@@ -1879,9 +1889,10 @@ class ClassMetadataInfo implements ClassMetadata
      */
     public function getAssociationTargetClass($assocName)
     {
-        if (!isset($this->associationMappings[$assocName])) {
+        if ( ! isset($this->associationMappings[$assocName])) {
             throw new \InvalidArgumentException("Association name expected, '" . $assocName ."' is not an association.");
         }
+        
         return $this->associationMappings[$assocName]['targetEntity'];
     }
     
@@ -1905,9 +1916,7 @@ class ClassMetadataInfo implements ClassMetadata
      */
     public function getQuotedColumnName($field, $platform)
     {
-        return isset($this->fieldMappings[$field]['quoted']) ?
-                $platform->quoteIdentifier($this->fieldMappings[$field]['columnName']) :
-                $this->fieldMappings[$field]['columnName'];
+        return isset($this->fieldMappings[$field]['quoted']) ? $platform->quoteIdentifier($this->fieldMappings[$field]['columnName']) : $this->fieldMappings[$field]['columnName'];
     }
     
     /**
@@ -1919,9 +1928,7 @@ class ClassMetadataInfo implements ClassMetadata
      */
     public function getQuotedTableName($platform)
     {
-        return isset($this->table['quoted']) ?
-                $platform->quoteIdentifier($this->table['name']) :
-                $this->table['name'];
+        return isset($this->table['quoted']) ? $platform->quoteIdentifier($this->table['name']) : $this->table['name'];
     }
 
     /**
@@ -1932,8 +1939,6 @@ class ClassMetadataInfo implements ClassMetadata
      */
     public function getQuotedJoinTableName(array $assoc, $platform)
     {
-        return isset($assoc['joinTable']['quoted'])
-            ? $platform->quoteIdentifier($assoc['joinTable']['name'])
-            : $assoc['joinTable']['name'];
+        return isset($assoc['joinTable']['quoted']) ? $platform->quoteIdentifier($assoc['joinTable']['name']) : $assoc['joinTable']['name'];
     }
 }

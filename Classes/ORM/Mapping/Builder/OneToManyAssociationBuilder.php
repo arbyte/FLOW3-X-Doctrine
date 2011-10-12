@@ -16,40 +16,47 @@
  * and is licensed under the LGPL. For more information, see
  * <http://www.doctrine-project.org>.
  */
- 
-namespace Doctrine\ORM;
+
+
+namespace Doctrine\ORM\Mapping\Builder;
 
 /**
- * Class to store and retrieve the version of Doctrine
+ * OneToMany Association Builder
  *
- * @license http://www.opensource.org/licenses/lgpl-license.php LGPL
- * @link    www.doctrine-project.org
- * @since   2.0
- * @version $Revision$
- * @author  Benjamin Eberlei <kontakt@beberlei.de>
- * @author  Guilherme Blanco <guilhermeblanco@hotmail.com>
- * @author  Jonathan Wage <jonwage@gmail.com>
- * @author  Roman Borschel <roman@code-factory.org>
+ * @license     http://www.opensource.org/licenses/lgpl-license.php LGPL
+ * @link        www.doctrine-project.com
+ * @since       2.0
+ * @author      Benjamin Eberlei <kontakt@beberlei.de>
  */
-class Version
+class OneToManyAssociationBuilder extends AssociationBuilder
 {
     /**
-     * Current Doctrine Version
+     * @param array $fieldNames
+     * @return OneToManyAssociationBuilder
      */
-    const VERSION = '2.2.0-DEV';
+    public function setOrderBy(array $fieldNames)
+    {
+        $this->mapping['orderBy'] = $fieldNames;
+        return $this;
+    }
+
+    public function setIndexBy($fieldName)
+    {
+        $this->mapping['indexBy'] = $fieldName;
+        return $this;
+    }
 
     /**
-     * Compares a Doctrine version with the current one.
-     *
-     * @param string $version Doctrine version to compare.
-     * @return int Returns -1 if older, 0 if it is the same, 1 if version 
-     *             passed as argument is newer.
+     * @return ClassMetadataBuilder
      */
-    public static function compare($version)
+    public function build()
     {
-        $currentVersion = str_replace(' ', '', strtolower(self::VERSION));
-        $version = str_replace(' ', '', $version);
-
-        return version_compare($version, $currentVersion);
+        $mapping = $this->mapping;
+        if ($this->joinColumns) {
+            $mapping['joinColumns'] = $this->joinColumns;
+        }
+        $cm = $this->builder->getClassMetadata();
+        $cm->mapOneToMany($mapping);
+        return $this->builder;
     }
 }

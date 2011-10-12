@@ -2190,9 +2190,11 @@ class UnitOfWork implements PropertyChangedListener
     public function tryGetById($id, $rootClassName)
     {
         $idHash = implode(' ', (array) $id);
+        
         if (isset($this->identityMap[$rootClassName][$idHash])) {
             return $this->identityMap[$rootClassName][$idHash];
         }
+        
         return false;
     }
 
