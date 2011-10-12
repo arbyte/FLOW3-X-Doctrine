@@ -1,4 +1,5 @@
 <?php
+
 /*
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -20,25 +21,13 @@
 namespace Doctrine\Common\Annotations\Annotation;
 
 /**
- * Annotation that can be used to signal to the parser to ignore specific
- * annotations during the parsing process.
+ * Annotation that can be used to signal to the parser
+ * to check if that attribute is required during the parsing process.
+ *
+ * @author Fabio B. Silva <fabio.bat.silva@gmail.com>
  *
  * @Annotation
- * @author Johannes M. Schmitt <schmittjoh@gmail.com>
  */
-final class IgnoreAnnotation
+final class Required
 {
-    public $names;
-
-    public function __construct(array $values)
-    {
-        if (is_string($values['value'])) {
-            $values['value'] = array($values['value']);
-        }
-        if (!is_array($values['value'])) {
-            throw new \RuntimeException(sprintf('@IgnoreAnnotation expects either a string name, or an array of strings, but got %s.', json_encode($values['value'])));
-        }
-
-        $this->names = $values['value'];
-    }
 }

@@ -1,7 +1,6 @@
 <?php
+
 /*
- *  $Id$
- *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -21,31 +20,53 @@
 
 namespace Doctrine\Common\Cache;
 
+use \Memcached;
+
 /**
- * Array cache driver.
+ * Memcached cache provider.
  *
  * @license http://www.opensource.org/licenses/lgpl-license.php LGPL
  * @link    www.doctrine-project.org
- * @since   2.0
+ * @since   2.2
  * @author  Benjamin Eberlei <kontakt@beberlei.de>
  * @author  Guilherme Blanco <guilhermeblanco@hotmail.com>
  * @author  Jonathan Wage <jonwage@gmail.com>
  * @author  Roman Borschel <roman@code-factory.org>
  * @author  David Abdemoulaie <dave@hobodave.com>
  */
-class ArrayCache extends CacheProvider
+class MemcachedCache extends CacheProvider
 {
     /**
-     * @var array $data
+     * @var Memcached
      */
-    private $data = array();
+    private $memcached;
+
+    /**
+     * Sets the memcache instance to use.
+     *
+     * @param Memcached $memcached
+     */
+    public function setMemcached(Memcached $memcached)
+    {
+        $this->memcached = $memcached;
+    }
+
+    /**
+     * Gets the memcached instance used by the cache.
+     *
+     * @return Memcached
+     */
+    public function getMemcached()
+    {
+        return $this->memcached;
+    }
 
     /**
      * {@inheritdoc}
      */
     protected function doFetch($id)
     {
-        return (isset($this->data[$id])) ? $this->data[$id] : false;
+        return $this->memcached->get($id);
     }
 
     /**
@@ -53,7 +74,7 @@ class ArrayCache extends CacheProvider
      */
     protected function doContains($id)
     {
-        return isset($this->data[$id]);
+        return (false !== $this->memcached->get($id));
     }
 
     /**
@@ -61,9 +82,7 @@ class ArrayCache extends CacheProvider
      */
     protected function doSave($id, $data, $lifeTime = 0)
     {
-        $this->data[$id] = $data;
-
-        return true;
+        return $this->memcached->set($id, $data, (int) $lifeTime);
     }
 
     /**
@@ -71,19 +90,15 @@ class ArrayCache extends CacheProvider
      */
     protected function doDelete($id)
     {
-        unset($this->data[$id]);
-        
-        return true;
+        return $this->memcached->delete($id);
     }
-    
+
     /**
      * {@inheritdoc}
      */
     protected function doFlush()
     {
-        $this->data = array();
-        
-        return true;
+        return $this->memcached->flush();
     }
     
     /**
@@ -91,6 +106,16 @@ class ArrayCache extends CacheProvider
      */
     protected function doGetStats()
     {
-        return null;
+        $stats   = $this->memcached->getStats();
+        $servers = $this->memcached->getServerList();
+        $key     = $servers[0]['host'] . ':' . $servers[0]['port'];
+        $stats   = $stats[$key];
+        return array(
+            Cache::STATS_HITS   => $stats['get_hits'],
+            Cache::STATS_MISSES => $stats['get_misses'],
+            Cache::STATS_UPTIME => $stats['uptime'],
+            Cache::STATS_MEMORY_USAGE       => $stats['bytes'],
+            Cache::STATS_MEMORY_AVAILIABLE  => $stats['limit_maxbytes'],
+        );
     }
 }

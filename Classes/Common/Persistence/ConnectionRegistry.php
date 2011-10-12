@@ -17,39 +17,46 @@
  * <http://www.doctrine-project.org>.
  */
 
-namespace Doctrine\Common;
+namespace Doctrine\Common\Persistence;
 
 /**
- * Class to store and retrieve the version of Doctrine
+ * Contract covering connection for a Doctrine persistence layer ManagerRegistry class to implement.
  *
  * @license http://www.opensource.org/licenses/lgpl-license.php LGPL
  * @link    www.doctrine-project.org
- * @since   2.0
- * @version $Revision$
+ * @since   2.2
  * @author  Benjamin Eberlei <kontakt@beberlei.de>
- * @author  Guilherme Blanco <guilhermeblanco@hotmail.com>
- * @author  Jonathan Wage <jonwage@gmail.com>
- * @author  Roman Borschel <roman@code-factory.org>
+ * @author  Lukas Kahwe Smith <smith@pooteeweet.org>
  */
-class Version
+interface ConnectionRegistry
 {
     /**
-     * Current Doctrine Version
+     * Gets the default connection name.
+     *
+     * @return string The default connection name
      */
-    const VERSION = '2.2.0-DEV';
+    function getDefaultConnectionName();
 
     /**
-     * Compares a Doctrine version with the current one.
+     * Gets the named connection.
      *
-     * @param string $version Doctrine version to compare.
-     * @return int Returns -1 if older, 0 if it is the same, 1 if version
-     *             passed as argument is newer.
+     * @param string $name The connection name (null for the default one)
+     *
+     * @return Connection
      */
-    public static function compare($version)
-    {
-        $currentVersion = str_replace(' ', '', strtolower(self::VERSION));
-        $version = str_replace(' ', '', $version);
+    function getConnection($name = null);
 
-        return version_compare($version, $currentVersion);
-    }
+    /**
+     * Gets an array of all registered connections
+     *
+     * @return array An array of Connection instances
+     */
+    function getConnections();
+
+    /**
+     * Gets all connection names.
+     *
+     * @return array An array of connection names
+     */
+    function getConnectionNames();
 }

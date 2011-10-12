@@ -1,4 +1,5 @@
 <?php
+
 /*
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -17,39 +18,30 @@
  * <http://www.doctrine-project.org>.
  */
 
-namespace Doctrine\Common;
+namespace Doctrine\Common\Annotations\Annotation;
 
 /**
- * Class to store and retrieve the version of Doctrine
+ * Annotation that can be used to signal to the parser
+ * to check the attribute type during the parsing process.
  *
- * @license http://www.opensource.org/licenses/lgpl-license.php LGPL
- * @link    www.doctrine-project.org
- * @since   2.0
- * @version $Revision$
- * @author  Benjamin Eberlei <kontakt@beberlei.de>
- * @author  Guilherme Blanco <guilhermeblanco@hotmail.com>
- * @author  Jonathan Wage <jonwage@gmail.com>
- * @author  Roman Borschel <roman@code-factory.org>
+ * @author Fabio B. Silva <fabio.bat.silva@gmail.com>
+ *
+ * @Annotation
  */
-class Version
+final class Attribute
 {
     /**
-     * Current Doctrine Version
+     * @var string
      */
-    const VERSION = '2.2.0-DEV';
+    public $name;
 
     /**
-     * Compares a Doctrine version with the current one.
-     *
-     * @param string $version Doctrine version to compare.
-     * @return int Returns -1 if older, 0 if it is the same, 1 if version
-     *             passed as argument is newer.
+     * @var string
      */
-    public static function compare($version)
-    {
-        $currentVersion = str_replace(' ', '', strtolower(self::VERSION));
-        $version = str_replace(' ', '', $version);
+    public $type;
 
-        return version_compare($version, $currentVersion);
-    }
+    /**
+     * @var boolean
+     */
+    public $required = false;
 }

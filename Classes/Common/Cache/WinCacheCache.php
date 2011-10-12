@@ -1,7 +1,6 @@
 <?php
+
 /*
- *  $Id$
- *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -22,30 +21,25 @@
 namespace Doctrine\Common\Cache;
 
 /**
- * Array cache driver.
+ * WinCache cache provider.
  *
  * @license http://www.opensource.org/licenses/lgpl-license.php LGPL
  * @link    www.doctrine-project.org
- * @since   2.0
+ * @since   2.2
  * @author  Benjamin Eberlei <kontakt@beberlei.de>
  * @author  Guilherme Blanco <guilhermeblanco@hotmail.com>
  * @author  Jonathan Wage <jonwage@gmail.com>
  * @author  Roman Borschel <roman@code-factory.org>
  * @author  David Abdemoulaie <dave@hobodave.com>
  */
-class ArrayCache extends CacheProvider
+class WincacheCache extends CacheProvider
 {
-    /**
-     * @var array $data
-     */
-    private $data = array();
-
     /**
      * {@inheritdoc}
      */
     protected function doFetch($id)
     {
-        return (isset($this->data[$id])) ? $this->data[$id] : false;
+        return wincache_ucache_get($id);
     }
 
     /**
@@ -53,7 +47,7 @@ class ArrayCache extends CacheProvider
      */
     protected function doContains($id)
     {
-        return isset($this->data[$id]);
+        return wincache_ucache_exists($id);
     }
 
     /**
@@ -61,9 +55,7 @@ class ArrayCache extends CacheProvider
      */
     protected function doSave($id, $data, $lifeTime = 0)
     {
-        $this->data[$id] = $data;
-
-        return true;
+        return (bool) wincache_ucache_set($id, $data, (int) $lifeTime);
     }
 
     /**
@@ -71,9 +63,7 @@ class ArrayCache extends CacheProvider
      */
     protected function doDelete($id)
     {
-        unset($this->data[$id]);
-        
-        return true;
+        return wincache_ucache_delete($id);
     }
     
     /**
@@ -81,9 +71,7 @@ class ArrayCache extends CacheProvider
      */
     protected function doFlush()
     {
-        $this->data = array();
-        
-        return true;
+        return wincache_ucache_clear();
     }
     
     /**
@@ -91,6 +79,14 @@ class ArrayCache extends CacheProvider
      */
     protected function doGetStats()
     {
-        return null;
+        $info   = wincache_ucache_info();
+        $meminfo= wincache_ucache_meminfo();
+        return array(
+            Cache::STATS_HITS   => $info['total_hit_count'],
+            Cache::STATS_MISSES => $info['total_miss_count'],
+            Cache::STATS_UPTIME => $info['total_cache_uptime'],
+            Cache::STATS_MEMORY_USAGE       => $meminfo['memory_total'],
+            Cache::STATS_MEMORY_AVAILIABLE  => $meminfo['memory_free'],
+        );
     }
 }

@@ -17,39 +17,25 @@
  * <http://www.doctrine-project.org>.
  */
 
-namespace Doctrine\Common;
+namespace Doctrine\Common\DateTime;
 
 /**
- * Class to store and retrieve the version of Doctrine
- *
+ * Thrown if a method is called on the Doctrine DateTime that semantically would change the
+ * inner state of the instance, hence immutability has to be enforced.
+ * 
  * @license http://www.opensource.org/licenses/lgpl-license.php LGPL
  * @link    www.doctrine-project.org
- * @since   2.0
- * @version $Revision$
+ * @since   3.0
  * @author  Benjamin Eberlei <kontakt@beberlei.de>
- * @author  Guilherme Blanco <guilhermeblanco@hotmail.com>
- * @author  Jonathan Wage <jonwage@gmail.com>
- * @author  Roman Borschel <roman@code-factory.org>
  */
-class Version
+class ImmutableException extends \Exception
 {
-    /**
-     * Current Doctrine Version
-     */
-    const VERSION = '2.2.0-DEV';
-
-    /**
-     * Compares a Doctrine version with the current one.
-     *
-     * @param string $version Doctrine version to compare.
-     * @return int Returns -1 if older, 0 if it is the same, 1 if version
-     *             passed as argument is newer.
-     */
-    public static function compare($version)
+    public function __construct()
     {
-        $currentVersion = str_replace(' ', '', strtolower(self::VERSION));
-        $version = str_replace(' ', '', $version);
-
-        return version_compare($version, $currentVersion);
+        parent::__construct(
+            "Cannot modify Doctrine\Common\DateTime\DateTime instance, its immutable. ".
+            "You can use #modify(), #add() and #sub() and work with the newly created instances " .
+            "that are returned."
+        );
     }
 }

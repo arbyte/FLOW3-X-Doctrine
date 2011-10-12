@@ -17,39 +17,27 @@
  * <http://www.doctrine-project.org>.
  */
 
+
 namespace Doctrine\Common;
 
 /**
- * Class to store and retrieve the version of Doctrine
+ * Comparable interface that allows to compare two value objects to each other for equality.
  *
- * @license http://www.opensource.org/licenses/lgpl-license.php LGPL
- * @link    www.doctrine-project.org
- * @since   2.0
- * @version $Revision$
- * @author  Benjamin Eberlei <kontakt@beberlei.de>
- * @author  Guilherme Blanco <guilhermeblanco@hotmail.com>
- * @author  Jonathan Wage <jonwage@gmail.com>
- * @author  Roman Borschel <roman@code-factory.org>
+ * @license     http://www.opensource.org/licenses/lgpl-license.php LGPL
+ * @link        www.doctrine-project.com
+ * @since       2.0
+ * @author      Benjamin Eberlei <kontakt@beberlei.de>
+ * @author      Guilherme Blanco <guilhermeblanco@hotmail.com>
  */
-class Version
+interface Comparable
 {
     /**
-     * Current Doctrine Version
-     */
-    const VERSION = '2.2.0-DEV';
-
-    /**
-     * Compares a Doctrine version with the current one.
+     * Compare the current object to the passed $other. Returns true if they are semantically equal.
      *
-     * @param string $version Doctrine version to compare.
-     * @return int Returns -1 if older, 0 if it is the same, 1 if version
-     *             passed as argument is newer.
+     * This method should not check for identity using ===, only for semantical equality for example
+     * when two different DateTime instances point to the exact same Date + TZ.
+     *
+     * @return bool
      */
-    public static function compare($version)
-    {
-        $currentVersion = str_replace(' ', '', strtolower(self::VERSION));
-        $version = str_replace(' ', '', $version);
-
-        return version_compare($version, $currentVersion);
-    }
+    public function equals($other);
 }
